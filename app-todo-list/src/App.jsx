@@ -96,7 +96,7 @@ const App = () => {
           placeholder="Nueva tarea"
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === "Enter") addTask();
           }}
         />
