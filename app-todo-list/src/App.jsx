@@ -1,135 +1,121 @@
-import React, { useState, useEffect } from "react";
-import "./style.css";
+import React, { useState, useEffect } from 'react';
+import './style.css';
 
-const App = () => {
-  const apiUrl = "https://playground.4geeks.com/apis/fake/todos/";
-  const username = "fabian"; // Puse mi nombre para hacer las pruebas. Cada vez que se eliminan las notas de la lista hay que crear un username de nuevo.
-
+const TodoList = () => {
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [newTask, setNewTask] = useState('');
+  const [username, setUsername] = useState('fabian'); //setUsername va a cambiar en la medida que cambie el nombre de usuario 
 
-  const loadTasks = () => {
-    fetch(apiUrl + "user/" + username, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Usuario no encontrado en la API");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setTasks(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        // Manejar el error, mostrar un mensaje al usuario, etc.
-        console.error("Error:", error);
-      });
-  };
+  /* EN ESTE MOMENTO HAY 4 USUARIOS EN LA API: ["fabian","Merlina","Camilo","pierre"]  */
+  
+  useEffect(() => {
+    // Obtener las tareas del usuario desde la API al montar el componente
+    fetch(`https://playground.4geeks.com/apis/fake/todos/user/${username}`)
+      .then((response) => response.json())
+      .then((data) => setTasks(data))
+      .catch((error) => console.error('Error fetching tasks:', error));
+  }, [username]);
 
   const addTask = () => {
-    if (newTask.trim() !== "") {
+    if (newTask.trim() !== '') {
       const updatedTasks = [...tasks, { label: newTask, done: false }];
-      updateTaskList(updatedTasks);
-      setNewTask("");
+      setTasks(updatedTasks);
+
+      // Sincronizar las tareas con la API
+      syncTasks(updatedTasks);
+
+      setNewTask('');
     }
   };
 
-  const updateTaskList = (updatedTasks) => {
-    fetch(apiUrl + "user/" + username, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updatedTasks),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setTasks(updatedTasks);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  };
+  const removeTask = (index) => {
+    const updatedTasks = [...tasks];
+    updatedTasks.splice(index, 1);
+    setTasks(updatedTasks);
 
-  const deleteCompletedTasks = () => {
-    const uncompletedTasks = tasks.filter((task) => !task.done);
-    updateTaskList(uncompletedTasks);
+    // Sincronizar las tareas con la API
+    syncTasks(updatedTasks);
   };
 
   const clearAllTasks = () => {
-    fetch(apiUrl + "user/" + username, {
-      method: "DELETE",
+    // Limpiar todas las tareas en el servidor
+    fetch(`https://playground.4geeks.com/apis/fake/todos/user/${username}`, {
+      method: 'DELETE',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Error al eliminar todas las tareas en la API");
-        }
-        return response.json();
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Tarea realizada:', data);
+        setTasks([]); // Actualizar el estado local para reflejar la lista vacía
       })
-      .then(() => {
-        setTasks([]); // Actualiza el estado local con una lista vacía
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+      .catch((error) => console.error('Error clearing tasks:', error));
   };
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  const toggleTaskDone = (index) => {
+    const updatedTasks = [...tasks];
+    updatedTasks[index].done = !updatedTasks[index].done;
+    setTasks(updatedTasks);
+
+    // Sincronizar las tareas con la API
+    syncTasks(updatedTasks);
+  };
+
+  const syncTasks = (updatedTasks) => {
+    fetch(`https://playground.4geeks.com/apis/fake/todos/user/${username}`, {
+      method: 'PUT',
+      body: JSON.stringify(updatedTasks),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => console.log('Tareas sincronizadas:', data))
+      .catch((error) => console.error('Error :', error));
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      addTask();
+    }
+  };
 
   return (
-    <div className="app-container">
-      <h1>TODO List</h1>
-      <div className="task-input">
+    <div className="todo-list">
+      <h1>TO-DO List</h1>
+      <div>
         <input
           type="text"
-          placeholder="Nueva tarea"
+          placeholder="Escribe una nueva tarea"
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") addTask();
-          }}
+          onKeyDown={handleKeyPress}
         />
         <button onClick={addTask}>Agregar</button>
-        <button onClick={clearAllTasks}>Limpiar todas las tareas</button>
+        <button onClick={clearAllTasks}>Limpiar Todas</button>
       </div>
-      <ul className="task-list">
-        {loading ? (
-          <p>Cargando tareas...</p>
-        ) : tasks.length === 0 ? (
-          <p>No hay tareas, añadir tareas</p>
-        ) : (
-          tasks.map((task, index) => (
-            <li key={index}>
-              <input
-                type="checkbox"
-                checked={task.done}
-                onChange={() => {
-                  const updatedTasks = [...tasks];
-                  updatedTasks[index].done = !task.done;
-                  updateTaskList(updatedTasks);
-                }}
-              />
-              <span className={task.done ? "completed" : ""}>{task.label}</span>
+      {tasks.length === 0 ? (
+        <p>No hay tareas, añadir tareas</p>
+      ) : (
+        <ul>
+          {tasks.map((task, index) => (
+            <li key={index} className={task.done ? 'complete' : ''}>
+              {task.label}{' '}
               {task.done && (
-                <button onClick={() => deleteCompletedTasks()}>Eliminar</button>
+                <span onClick={() => removeTask(index)} style={{ cursor: 'pointer' }}>
+                  ❌
+                </span>
               )}
+              <span onClick={() => toggleTaskDone(index)} style={{ cursor: 'pointer' }}>
+                ✔️
+              </span>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
 
-export default App;
+export default TodoList;
