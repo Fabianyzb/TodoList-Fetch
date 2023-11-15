@@ -4,9 +4,9 @@ import './style.css';
 const TodoList = () => {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
-  const [username, setUsername] = useState('fabian'); //setUsername va a cambiar en la medida que cambie el nombre de usuario 
+  const [username, setUsername] = useState('pepito'); //setUsername va a cambiar en la medida que cambie el nombre de usuario 
 
-  /* EN ESTE MOMENTO HAY 4 USUARIOS EN LA API: ["fabian","Merlina","Camilo","pierre"]  */
+  /* VERIFICAR SI EL USUARIO ESTA CREADO Y SI NO CREARLO POST*/
   
   useEffect(() => {
     // Obtener las tareas del usuario desde la API al montar el componente
