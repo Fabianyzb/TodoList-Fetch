@@ -4,17 +4,60 @@ import './style.css';
 const TodoList = () => {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
-  const [username, setUsername] = useState('pepito'); //setUsername va a cambiar en la medida que cambie el nombre de usuario 
+  const [username, setUsername] = useState('fabian');
 
-  /* VERIFICAR SI EL USUARIO ESTA CREADO Y SI NO CREARLO POST*/
-  
+  /* ELIMINAR SOLAMENTE LAS TAREAS, NO EL USUARIO */
+
   useEffect(() => {
-    // Obtener las tareas del usuario desde la API al montar el componente
+    // Verificar si el usuario existe antes de obtener las tareas
+    fetch(`https://playground.4geeks.com/apis/fake/todos/user/${username}`)
+      .then((response) => {
+        if (!response.ok) {
+          // Si la respuesta no es exitosa, el usuario no existe
+          throw new Error(`The user ${username} doesn't exist`);
+        }
+        return response.json();
+      })
+      .then((data) => setTasks(data))
+      .catch((error) => {
+        // Manejar el error de usuario inexistente aquí
+        console.error('Error fetching tasks:', error.message);
+        // Puedes crear el usuario si no existe
+        createUser();
+      });
+  }, [username]);
+
+  const createUser = () => {
+    //  método POST
+    fetch(`https://playground.4geeks.com/apis/fake/todos/user/${username}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([]),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('User created:', data);
+        // user creado
+        fetchTasks();
+      })
+      .catch((error) => console.error('Error creating user:', error));
+  };
+
+  const fetchTasks = () => {
+    // Obtener las tareas del usuario desde la API
     fetch(`https://playground.4geeks.com/apis/fake/todos/user/${username}`)
       .then((response) => response.json())
-      .then((data) => setTasks(data))
+      .then((data) => {
+        if (data.msg){
+          createUser()
+        }else{
+          setTasks(data)
+        }
+      })
       .catch((error) => console.error('Error fetching tasks:', error));
-  }, [username]);
+  };
 
   const addTask = () => {
     if (newTask.trim() !== '') {
@@ -47,8 +90,9 @@ const TodoList = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Tarea realizada:', data);
-        setTasks([]); // Actualizar el estado local para reflejar la lista vacía
+        console.log('Tasks cleared:', data);
+        //setTasks([]);
+        fetchTasks()
       })
       .catch((error) => console.error('Error clearing tasks:', error));
   };
@@ -58,7 +102,7 @@ const TodoList = () => {
     updatedTasks[index].done = !updatedTasks[index].done;
     setTasks(updatedTasks);
 
-    // Sincronizar las tareas con la API
+    // Sincronizar tareas con API
     syncTasks(updatedTasks);
   };
 
@@ -71,8 +115,8 @@ const TodoList = () => {
       },
     })
       .then((response) => response.json())
-      .then((data) => console.log('Tareas sincronizadas:', data))
-      .catch((error) => console.error('Error :', error));
+      .then((data) => console.log('Tasks synchronized:', data))
+      .catch((error) => console.error('Error syncing tasks:', error));
   };
 
   const handleKeyPress = (e) => {
