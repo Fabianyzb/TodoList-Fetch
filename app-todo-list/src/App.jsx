@@ -67,7 +67,7 @@ const TodoList = () => {
       // Sincronizar las tareas con la API
       syncTasks(updatedTasks);
 
-      setNewTask('');sfsdfsdfsdfsdfsdfsdf
+      setNewTask('');
     }
   };
 
